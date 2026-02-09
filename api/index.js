@@ -1,28 +1,36 @@
 const { Telegraf } = require('telegraf');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Get your token from @BotFather
+// Initialize Bot and AI
 const bot = new Telegraf(process.env.BOT_TOKEN);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Simple commands
-bot.start((ctx) => ctx.reply('Welcome! I am running on Vercel.'));
-bot.help((ctx) => ctx.reply('Send me any message and I will echo it back.'));
+bot.start((ctx) => ctx.reply("Hi! I'm your AI assistant powered by Gemini. Ask me anything!"));
 
-// Echo logic
-bot.on('text', (ctx) => {
-  ctx.reply(`You said: ${ctx.message.text}`);
+bot.on('text', async (ctx) => {
+  const userMessage = ctx.message.text;
+
+  // Show "typing..." status in Telegram while AI thinks
+  await ctx.sendChatAction('typing');
+
+  try {
+    const result = await model.generateContent(userMessage);
+    const response = await result.response;
+    const text = response.text();
+
+    await ctx.reply(text);
+  } catch (error) {
+    console.error("AI Error:", error);
+    await ctx.reply("Sorry, I'm having trouble thinking right now. Try again later!");
+  }
 });
 
-// Vercel serverless function handler
+// Vercel handler
 module.exports = async (req, res) => {
-  try {
-    // Only handle POST requests from Telegram
-    if (req.method === 'POST') {
-      await bot.handleUpdate(req.body, res);
-    } else {
-      res.status(200).send('Bot is running!');
-    }
-  } catch (error) {
-    console.error('Error in handler:', error);
-    res.status(500).send('Error');
+  if (req.method === 'POST') {
+    await bot.handleUpdate(req.body, res);
+  } else {
+    res.status(200).send('AI Bot is active.');
   }
 };
