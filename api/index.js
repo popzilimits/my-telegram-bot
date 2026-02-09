@@ -10,19 +10,17 @@ bot.start((ctx) => ctx.reply("Hi! I'm your AI assistant powered by Gemini. Ask m
 
 bot.on('text', async (ctx) => {
   const userMessage = ctx.message.text;
-
-  // Show "typing..." status in Telegram while AI thinks
   await ctx.sendChatAction('typing');
 
   try {
     const result = await model.generateContent(userMessage);
     const response = await result.response;
     const text = response.text();
-
     await ctx.reply(text);
   } catch (error) {
+    // This will tell us EXACTLY what went wrong
     console.error("AI Error:", error);
-    await ctx.reply("Sorry, I'm having trouble thinking right now. Try again later!");
+    await ctx.reply(`Error logic: ${error.message.substring(0, 100)}`);
   }
 });
 
@@ -34,3 +32,4 @@ module.exports = async (req, res) => {
     res.status(200).send('AI Bot is active.');
   }
 };
+
